@@ -13,6 +13,20 @@ export const axiosClient = axios.create({
 });
 
 /**
+ * Request interceptor: automatically attaches JWT access token from localStorage
+ * as `Authorization: Bearer <token>` header to prevent cross-domain cookie blocking on Netlify/Render.
+ */
+axiosClient.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+/**
  * Interceptor to automatically unwrap standard backend API responses:
  * `{ success: true, statusCode: 200, message: "...", data: ... }` -> returns `response.data.data` (or `response.data` if no `.data` wrapper).
  */

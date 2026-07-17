@@ -40,17 +40,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (payload: LoginPayload) => {
     const res = await authApi.login(payload);
+    if (res.accessToken && typeof window !== "undefined") {
+      localStorage.setItem("token", res.accessToken);
+    }
     setUser(res.user);
     setIsModalOpen(false);
   };
 
   const register = async (payload: RegisterPayload) => {
     const res = await authApi.register(payload);
+    if (res.accessToken && typeof window !== "undefined") {
+      localStorage.setItem("token", res.accessToken);
+    }
     setUser(res.user);
     setIsModalOpen(false);
   };
 
   const logout = async () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
     await authApi.logout();
     setUser(null);
   };
