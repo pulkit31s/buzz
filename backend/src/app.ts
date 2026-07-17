@@ -25,7 +25,21 @@ const app: Express = express();
 app.use(helmet()); // Secure HTTP response headers
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:3000",
+        env.CLIENT_URL,
+        env.CLIENT_URL ? env.CLIENT_URL.replace(/\/$/, "") : "",
+      ].filter(Boolean);
+
+      // Allow requests with no origin (mobile apps, curl, postman, server-to-server) or matched origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`[CORS BLOCKED] Request origin: ${origin} not in allowed: ${allowedOrigins.join(", ")}`);
+        callback(null, false); // Block gracefully without crashing preflight
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -51,6 +65,10 @@ if (env.NODE_ENV !== "test") {
 // ==========================================
 // 2. Health Check & Root Route
 // ==========================================
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json(new ApiResponse(200, { status: "ONLINE", documentation: "/api/v1/health" }, "Welcome to Buzz Backend API! All services are running."));
+});
+
 app.get("/api/v1/health", (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, { status: "UP", timestamp: new Date().toISOString() }, "Buzz API is running smoothly"));
 });
